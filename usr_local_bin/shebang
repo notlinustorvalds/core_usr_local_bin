@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+### This is used to provide a proper, portable BASH shebang
+### You may thank @Hacker_Horse (or hackerhorse.io) for the inspiration
+
+echo -e '#!/usr/bin/env  bash'"\n"
+
