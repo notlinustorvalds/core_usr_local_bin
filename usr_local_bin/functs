@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+## This file should **not** contain ANY directly called scripts.
+## RATHER, it's meant to act as a common place for BASH functions
+## that get called ALL. THE. TIME.
+
+### Classic batch file "pause" command.
+### See https://stackoverflow.com/questions/92802/what-is-the-linux-equivalent-to-dos-pause
+pause() {
+    read -n1 -rp "  Press the 'any' key to continue..."
+}
+
