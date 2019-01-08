@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+### \brief   Prints out a shruggie.
+### \since   10 Aug 2018
+
+readonly SHRUGGIE='¯\_(ツ)_/¯'
+echo "$SHRUGGIE";
+exit 0;
+

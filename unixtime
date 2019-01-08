@@ -1,0 +1,270 @@
+#!/usr/bin/env bash
+
+## \file    unixtime.sh
+## \brief   Script to print out unix time at terminal.  Yes, I could just as easily do this via ~/.bashrc
+## \since   28 Jun 2013
+## \author  Rich Williams; misterich-at-google's-email-domain
+
+###################################################################################################
+# CONSTANTS AND VARS
+    # Use C- style booleans.
+declare -ir FALSE=0;
+declare -ir TRUE=1;
+timestamp=`date +%F\ %H:%M:%S.%N\ %Z`;
+tz='';
+show_file_timestamp=$FALSE;
+show_timezone_data=$FALSE;
+show_unix_time=$TRUE;
+show_local_time=$FALSE;
+show_nanoseconds=$FALSE;
+verbose_mode=$FALSE;
+quote_char='';
+error_string='';
+
+
+
+
+###################################################################################################
+# FUNCTIONS
+
+## Help/usage message
+function    help()  {
+    more << END_STRING
+
+  USAGE:
+        unixtime [-bfghnqtuv] [-z [timezone_code] ]
+
+  Returns the current time in number of seconds since EPOCH: 01 January, 1970 UTC (a.k.a: "UNIX time").
+
+  NOTES
+  - "UNIX time" is **always** UTC and is not specific to a timezone.
+  - To get a list of timezones for use in the timezone_code arg, use the 'tzselect' command
+    -- or take a look through the directory tree at /usr/share/zoneinfo
+  - If no timezone code is supplied, then the time zone is whatever the system default is.
+
+  OPTIONS
+    -b  "Both UNIX and normal time" 
+            Returns both the unix time *and* an human readable date string suitable to use
+            in file names (YYYY-MM-DD_HH-MM-SS)
+            Example:   
+                $ unixtime -b
+                    1372447522
+                    2013-06-28_12-25-22
+
+    -f  "File timestamp format"
+            Returns only a  human readable date string suitable to use in file names (YYYY-MM-DD_HH-MM-SS)
+            Example:
+                $ unixtime -f
+                    2013-06-28_12-25-22
+
+    -g  "GMT"
+            (Same as -u)
+    
+    -h  "Help(!)"
+            Prints this usage message
+    
+    -l  "Local Time"
+        Adds an extra line to print out the local time in file timestamp format
+
+    -n  "Include Nanoseconds"
+            Includes the nanoseconds in the output
+            Examples:
+                $ unixtime -bn
+                    1372447522.780536619
+                    2013-06-28_12-25-22.780536619
+                $ unixtime -n
+                    1372448509.780536619
+                $ unixtime -fn
+                    2013-06-28_12-25-22.780536619
+                $ unixtime -fnv
+                    PDT (UTC -07:00):    2013-06-28_12-25-22.780536619
+                $ unixtime -fntv
+                    PDT (UTC -07:00):    2013-06-28_12-25-22.780536619_PDT_-0700
+    
+    -q  "Quoted (single) String"
+            Return value(s) are quoted within single strings
+            Examples:
+                $ unixtime -bqn
+                    '1372447522.780536619'
+                    '2013-06-28_12-25-22.780536619'
+                $ unixtime -uqn
+                    1372448509.780536619
+                $ unixtime -fqn
+                    '2013-06-28_12-25-22.780536619'
+                $ unixtime -fnvq
+                    PDT (UTC -07:00):    '2013-06-28_12-25-22.780536619'
+                $ unixtime -fnvtq
+                    PDT (UTC -07:00):    '2013-06-28_12-25-22.780536619_PDT_-0700'
+    
+    -t  "Include Timezone Code and Offset"
+            Return value(s) include the timezone abbreviation and the UTC offset
+            Examples:
+                $ unixtime -bqnt
+                    '1372447522.780536619_UTC'
+                    '2013-06-28_12-25-22.780536619_PDT_-0700'
+                $ unixtime -fnvtq
+                    PDT (UTC -07:00):    '2013-06-28_12-25-22.780536619_PDT_-0700'
+    -u  "UTC Timezone"
+            Return value(s) are for UTC timezone.  
+            - Note that "UNIX time" (seconds since EPOCH) is **ALWAYS** UTC.  Therefore,
+              the commands "$ unixtime -u" and "$ unixtime" ***DO EXACTLY THE SAME THING***
+            Examples:
+                $ unixtime -uf
+                    2013-06-28_12-25-22
+                $ unixtime -uft
+                    2013-06-28_12-25-22_UTC
+                $ unixtime -uftn
+                    2013-06-28_12-25-22.780536619_UTC
+
+    -v  "Verbose"
+            Return value(s) are prefixed with the timezone code and offset in plain English
+            separated by whitespace
+            Examples:
+                $ unixtime -v
+                    UTC 1372447522
+                $ unixtime -fnvq
+                    PDT (UTC -07:00):    '2013-06-28_12-25-22.780536619'
+                $ unixtime -fnvtq
+                    PDT (UTC -07:00):    '2013-06-28_12-25-22.780536619_PDT_-0700
+
+
+END_STRING
+}
+
+
+## The function that actually prints out the timestamp(s)
+function    print_timestamps()  {
+    unix_date_format_args='';
+    unix_verbose_mode_label='';
+    date_format_args='';
+    verbose_mode_label='';
+    local_verbose_mode_label='';
+    localtime='';
+    unixtime='';
+    filetime='';
+
+    echo -n "$error_string";
+    
+    if [[ $TRUE == $verbose_mode ]]; then
+        if [[ $TRUE == $show_local_time ]]; then
+            local_verbose_mode_label=`date +%Z`' (UTC '`date +%z`'): ';
+        fi
+
+        if [[ -n $tz ]];    then
+            export TZ="$tz";
+        fi
+        verbose_mode_label=`date +%Z`' (UTC '`date +%z`'): ';
+        unix_verbose_mode_label='UNIX time (UTC): ';
+    fi
+    
+    # control the unix time format
+    if [[ $TRUE == $show_unix_time ]]; then
+        unix_date_format_args='+%s';
+
+        if [[ $TRUE == $show_nanoseconds ]]; then
+            unix_date_format_args="$unix_date_format_args"'.%N';
+        fi
+        
+        if [[ $TRUE == $show_timezone_data ]]; then
+            unix_date_format_args="$unix_date_format_args"'_UTC';
+        fi
+    fi
+    
+    #control the filetime and localtime options
+    if [[ $TRUE == $show_file_timestamp || $TRUE == $show_local_time ]]; then    
+        date_format_args='+%F_%H-%M-%S';
+
+        if [[ $TRUE == $show_nanoseconds ]]; then
+            date_format_args="$date_format_args.%N";
+        fi
+        
+        if [[ $TRUE == $show_timezone_data ]]; then
+            date_format_args="$date_format_args"'_%Z_%z';
+        fi
+    fi
+   
+    # print time
+#    echo "
+#\$unix_date_format_args: '$unix_date_format_args'
+#\$date_format_args: '$date_format_args'
+#\$unix_verbose_mode_label: '$unix_verbose_mode_label'
+#\$verbose_mode_label: '$verbose_mode_label'
+#"
+    if [[ $TRUE == $show_unix_time ]]; then
+        if [[ -n $TZ ]];    then
+             export TZ="$tz";
+        fi
+        unixtime=`date --date="$timestamp" $unix_date_format_args`;
+        echo $unix_verbose_mode_label$quote_char$unixtime$quote_char;
+    fi
+    if [[ $TRUE -eq $show_file_timestamp ]]; then
+        if [[ -n $TZ ]];    then
+             export TZ="$tz";
+        fi
+        filetime=`date --date="$timestamp" $date_format_args`;
+        echo $verbose_mode_label$quote_char$filetime$quote_char;
+    fi
+    if [[ $TRUE == $show_local_time ]]; then
+        unset TZ;
+        localtime=`date --date="$timestamp" $date_format_args`;
+        echo  "$local_verbose_mode_label$quote_char$localtime$quote_char"' << Local Time >>';
+    fi
+}
+
+###################################################################################################
+# EXECUTION
+options=":bfghlnqtuvz:";
+while getopts $options opt; do
+    case $opt   in
+        b)  show_file_timestamp=$TRUE;
+            show_unix_time=$TRUE;
+            ;;
+        f)  show_file_timestamp=$TRUE;
+            show_unix_time=$FALSE;
+            ;;
+        g)  tz='Zulu';
+            ;;
+        h)  help;
+            exit;
+            ;;
+        l)  show_local_time=$TRUE;
+            ;;
+        n)  show_nanoseconds=$TRUE;
+            ;;
+        q)  quote_char="'";
+            ;;
+        t)  show_timezone_data=$TRUE
+            ;;
+        u)  tz='Zulu';
+            ;;
+        v)  verbose_mode=$TRUE;
+            ;;
+        z)  if [[ -n $OPTARG ]];  then
+                tz="$OPTARG";
+            fi
+            ;;
+        \?) error_string="$error_string
+  ...cowardly ignoring the invalid '-$OPTARG' option
+
+"
+            ;;
+    esac
+done;
+
+#echo "
+#\$FALSE: '$FALSE'
+#\$TRUE: '$TRUE'
+#\$timestamp: '$timestamp'
+#\$tz: '$tz'
+#\$show_file_timestamp: '$show_file_timestamp'
+#\$show_timezone_data: '$show_timezone_data'
+#\$show_unix_time: '$show_unix_time'
+#\$show_nanoseconds: '$show_nanoseconds'
+#\$verbose_mode: '$verbose_mode'
+#\$quote_char: '$quote_char'
+#\$error_string: '$error_string'
+#
+#"
+print_timestamps;
+exit;
+

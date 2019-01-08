@@ -1,0 +1,126 @@
+#!/usr/bin/env bash
+
+## # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+## \file    timestamp.sh
+## \brief   Shortcut for getting a timestamp quick and dirty (I forget `date` args!)
+## \since   24 Mar 2015
+##
+
+## Assistance from:
+## - http://wiki.bash-hackers.org/howto/getopts_tutorial
+## - http://stackoverflow.com/questions/4440842/test-if-a-variable-is-read-only
+## - http://stackoverflow.com/questions/3953645/ternary-operator-in-bash
+
+function    print_help()    {
+    cat << EOF
+    
+    timestamp [-DghnTUuz]
+
+        ARG     DESCRIPTION    
+        -D      Print date only
+        -g      Timestamp (whatever format) in UTC (GMT). "-UTC-" always appended unless unix only time
+        -h      print this help message
+        -n      Append nanoseconds to time
+        -T      Time only (nanoseconds MAY be appended and UTC [-g] specified)
+        -U      UNIX epoch only (nanoseconds MAY be appended)
+        -u      Append UNIX epoch to output string (at very end)
+        -z      Append numeric timezone offset ("_-0700", "_+0530") to output string
+
+EOF
+}
+
+
+format_string="+%F_%H-%M-%S";   ## default: 2015-03-24_10-08-54
+date_only="false"
+gmt="false";
+append_unix_epoch="false"
+append_tz_offset="false";
+append_nanoseconds="false";
+
+function    print_time()    {
+    # date +%F_%H-%M-%S;
+    date_arg="";
+    exit_code="";
+    format_string_appendix="";
+
+    if [[ "true" == "$gmt" ]]; then
+        readonly date_arg="-u";
+        format_string_appendix="-UTC-";
+    fi
+
+    if [[ "true" == "$date_only" ]]; then
+        date $date_arg "$format_string$format_string_appendix";
+        exit_code="$?";
+    else
+        
+        format_string_appendix="";
+        
+        if [[ "true" == "$append_nanoseconds" ]]; then
+            format_string_appendix="$format_string_appendix".%N;
+        fi
+        
+        if [[ "+%s" == "$format_string" ]]; then
+            date $date_arg "$format_string$format_string_appendix";
+            exit_code="$?";
+        else
+            if [[ "true" == "$append_tz_offset" ]]; then
+                format_string_appendix="$format_string_appendix"_%z;
+            fi
+            if [[ "true" == "$gmt" ]]; then
+                format_string_appendix="$format_string_appendix-UTC-"
+                
+            fi
+            if [[ "true" == "$append_unix_epoch" ]]; then
+                format_string_appendix="$format_string_appendix"_%s;
+            fi
+            
+            #echo "$format_string_appendix"
+            date $date_arg "$format_string$format_string_appendix";
+            exit_code="$?";
+        fi
+    fi
+
+    exit "$exit_code";
+}
+
+
+
+while getopts "DghnTUuz" opt; do
+    case $opt in
+        D)  format_string="+%F" 2> /dev/null && readonly date_only="true";  ## '&&' only affects next instruction
+            #echo "$format_string"
+            ;;
+        g)  readonly gmt="true";
+            ;;
+        h)  print_help;
+            exit 0;
+            ;;
+        n)  readonly append_nanoseconds="true";
+            ;;
+        T)  format_string="+%H-%M-%S" 2> /dev/null  && readonly date_only="false";
+            ;;
+        U)  format_string="+%s" 2> /dev/null  && readonly date_only="false";
+            ;;
+        u)  readonly append_unix_epoch="true";
+            ;;
+        z)  readonly append_tz_offset="true";
+            ;;
+        \?) print_help;
+            exit 99;
+            ;;
+    esac
+done
+
+#echo "format_string:    '$format_string'";
+#echo "date_only:        '$date_only'";
+#echo "gmt:              '$gmt'";
+#echo "append_unix_epoch     '$append_unix_epoch'";
+#echo "append_tz_offset      '$append_tz_offset'";
+#echo "append_nanoseconds    '$append_nanoseconds'";
+
+
+print_time;
+
+exit 0;
+
+
