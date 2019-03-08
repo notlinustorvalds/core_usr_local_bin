@@ -3,6 +3,10 @@
 ### The Shutter screenshot tool seems completely
 ### borked on SUSE.  This is a terrible approximation.
 ###
+### REQUIRES:
+### - scrot (to take the images)
+### - eog (to view the images)
+###
 ### Here's the BASH one-liner I used to test this:
 ###    foo=`timestamp`; \
 ###    scrot -sbd 3 '/data/pub/screenshots/'$foo'__$wx$h.png'; \
