@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+## Adapted from cyberciti.biz/faq/how-to-find-out-if-my-ubuntudebian-linux-server-needs-a-reboot
+## Works on Ubuntu Only
+
+if [[ -f /var/run/reboot-required ]]; then
+    cat /var/run/reboot-required
+else
+    cat << EOF
+  
+  '/var/run/reboot-required' does not exist.
+  A reboot does not seem to be required at this time.
+
+EOF
+fi
+
+exit 0
+
