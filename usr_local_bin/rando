@@ -1,0 +1,10 @@
+#!/usr/bin/env  bash
+
+## Adapted from https://unix.stackexchange.com/a/230676
+# Any "visible"  char
+#
+# LC_ALL=C tr -dc '[:graph:]' </dev/urandom | head -c 13; echo
+#
+# OWASP Special chars
+# tr -dc 'A-Za-z0-9!"#$%&'\''()*+,-./:;<=>?@[\]^_`{|}~' </dev/urandom | head -c 13; echo
+# 
